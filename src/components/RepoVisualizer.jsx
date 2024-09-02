@@ -52,11 +52,12 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = 8;
-      node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
+      node.__r = node.group === 'tree' ? 10 : 6;
+      node.__strokeColor = 'rgba(255, 255, 255, 0.8)';
+      node.__strokeWidth = 2;
     }
     setSelectedNode(node);
-  }, [theme]);
+  }, []);
 
   const handleNodeClick = useCallback(node => {
     if (graphRef.current) {
@@ -80,8 +81,8 @@ const RepoVisualizer = () => {
 
   const getNodeColor = useCallback((node) => {
     const colors = {
-      tree: '#22c55e',
-      blob: '#3b82f6',
+      tree: '#4ade80',
+      blob: '#60a5fa',
       commit: '#f59e0b',
       tag: '#8b5cf6',
     };
@@ -170,37 +171,41 @@ const RepoVisualizer = () => {
           graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 4 : 6}
+          nodeVal={node => node.group === 'tree' ? 8 : 4}
           nodeLabel="name"
           nodeColor={getNodeColor}
-          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-          linkWidth={1.5}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.2)' : 'rgba(55, 65, 81, 0.2)'}
+          linkWidth={1}
           linkDirectionalParticles={2}
-          linkDirectionalParticleWidth={1.5}
+          linkDirectionalParticleWidth={1}
           linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
-            if (!showLabels) return;
-            const label = node.name;
-            const fontSize = 12/globalScale;
-            ctx.font = `${fontSize}px Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-            ctx.fillText(label, node.x, node.y + 10);
+            const size = node.group === 'tree' ? 10 : 6;
+            const fontSize = 12 / globalScale;
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
+            ctx.fillStyle = getNodeColor(node);
+            ctx.fill();
+            
+            // Add white outline
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            ctx.lineWidth = 2 / globalScale;
+            ctx.stroke();
+
+            if (showLabels && globalScale > 1) {
+              ctx.font = `${fontSize}px Inter, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(node.name, node.x, node.y + size + fontSize);
+            }
           }}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
           cooldownTimes={100}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
-          linkHoverPrecision={5}
-          onLinkHover={(link) => {
-            if (link) {
-              link.color = '#f59e0b';
-              link.width = 3;
-            }
-          }}
         />
         {selectedNode && (
           <motion.div
