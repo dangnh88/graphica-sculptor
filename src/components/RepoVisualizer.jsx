@@ -3,7 +3,7 @@ import { ForceGraph2D } from 'react-force-graph';
 import { fetchRepoStructure, fetchRepoInfo } from '../utils/githubUtils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Loader2, Sun, Moon, Search, Filter, Info, Tag } from 'lucide-react';
+import { Loader2, Sun, Moon, Search, Info, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
@@ -52,7 +52,7 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = 2.5; // Further reduced hover size
+      node.__r = 2.5;
       node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
     }
     setSelectedNode(node);
@@ -170,19 +170,19 @@ const RepoVisualizer = () => {
           graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75} // Further reduced node sizes
+          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
           nodeLabel="name"
           nodeColor={getNodeColor}
           linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-          linkWidth={0.3} // Further reduced link width
-          linkDirectionalParticles={1}
-          linkDirectionalParticleWidth={0.3} // Further reduced particle width
+          linkWidth={0.3}
+          linkDirectionalParticles={2}
+          linkDirectionalParticleWidth={0.5}
           linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
             if (showLabels) {
               const label = node.name;
-              const fontSize = 4/globalScale; // Further reduced font size
+              const fontSize = 4/globalScale;
               ctx.font = `${fontSize}px Inter, sans-serif`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
@@ -190,9 +190,8 @@ const RepoVisualizer = () => {
               ctx.fillText(label, node.x, node.y + 4);
             }
 
-            // Draw a smaller circle for the node
             ctx.beginPath();
-            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false); // Further reduced circle size
+            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
             ctx.fillStyle = getNodeColor(node);
             ctx.fill();
           }}
@@ -205,7 +204,7 @@ const RepoVisualizer = () => {
           onLinkHover={(link) => {
             if (link) {
               link.color = '#f59e0b';
-              link.width = 0.5; // Further reduced hover width
+              link.width = 0.5;
             }
           }}
         />
