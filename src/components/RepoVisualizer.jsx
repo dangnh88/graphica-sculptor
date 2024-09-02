@@ -52,7 +52,7 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = 2.5;
+      node.__r = 2;
       node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
     }
     setSelectedNode(node);
@@ -170,7 +170,7 @@ const RepoVisualizer = () => {
           graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
+          nodeVal={node => node.group === 'blob' ? 0.3 : 0.5}
           nodeLabel="name"
           nodeColor={getNodeColor}
           linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
@@ -182,16 +182,16 @@ const RepoVisualizer = () => {
           nodeCanvasObject={(node, ctx, globalScale) => {
             if (showLabels) {
               const label = node.name;
-              const fontSize = 4/globalScale;
+              const fontSize = 3/globalScale;
               ctx.font = `${fontSize}px Inter, sans-serif`;
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-              ctx.fillText(label, node.x, node.y + 4);
+              ctx.fillText(label, node.x, node.y + 3);
             }
 
             ctx.beginPath();
-            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
+            ctx.arc(node.x, node.y, 1, 0, 2 * Math.PI, false);
             ctx.fillStyle = getNodeColor(node);
             ctx.fill();
           }}
