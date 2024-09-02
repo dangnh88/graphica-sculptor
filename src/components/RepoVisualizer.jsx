@@ -175,8 +175,8 @@ const RepoVisualizer = () => {
           nodeColor={getNodeColor}
           linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
           linkWidth={0.3}
-          linkDirectionalParticles={2}
-          linkDirectionalParticleWidth={0.5}
+          linkDirectionalParticles={4}
+          linkDirectionalParticleWidth={1}
           linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
