@@ -7,6 +7,7 @@ import { Loader2, Sun, Moon, Search, Info, Tag, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 
 const RepoVisualizer = () => {
@@ -15,10 +16,10 @@ const RepoVisualizer = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState(null);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -93,14 +94,11 @@ const RepoVisualizer = () => {
     if (!repoUrl) return;
     const [, , , owner, repo] = repoUrl.split('/');
     try {
-      setIsAnalyzing(true);
       const result = await analyzeRepoContent(owner, repo);
       setAnalysisResult(result);
-      setShowAnalysisPanel(true);
+      setIsAnalysisOpen(true);
     } catch (error) {
       setError('Failed to analyze repository content. Please try again.');
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -148,6 +146,15 @@ const RepoVisualizer = () => {
             className="flex-grow bg-background text-foreground border-input focus:border-primary"
             startIcon={<Search className="h-4 w-4" />}
           />
+          <Tooltip content="View repository info">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsInfoOpen(true)}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </Tooltip>
           <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
             <Button
               variant="outline"
@@ -162,14 +169,13 @@ const RepoVisualizer = () => {
               variant="outline"
               size="icon"
               onClick={handleAnalyze}
-              disabled={isAnalyzing}
             >
-              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+              <Brain className="h-4 w-4" />
             </Button>
           </Tooltip>
         </div>
       </div>
-      <div className="flex-grow relative flex">
+      <div className="flex-grow relative">
         <AnimatePresence>
           {(isRepoStructureLoading || isRepoInfoLoading) && (
             <motion.div
@@ -182,79 +188,49 @@ const RepoVisualizer = () => {
             </motion.div>
           )}
         </AnimatePresence>
-        <div className={`flex-grow ${showAnalysisPanel ? 'w-2/3' : 'w-full'}`}>
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={filteredGraphData()}
-            backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
-            nodeAutoColorBy="group"
-            nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
-            nodeLabel="name"
-            nodeColor={getNodeColor}
-            linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-            linkWidth={0.3}
-            linkDirectionalParticles={4}
-            linkDirectionalParticleWidth={1}
-            linkDirectionalParticleSpeed={0.005}
-            nodeCanvasObjectMode={() => 'after'}
-            nodeCanvasObject={(node, ctx, globalScale) => {
-              if (showLabels) {
-                const label = node.name;
-                const fontSize = 4/globalScale;
-                ctx.font = `${fontSize}px Inter, sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-                ctx.fillText(label, node.x, node.y + 4);
-              }
+        <ForceGraph2D
+          ref={graphRef}
+          graphData={filteredGraphData()}
+          backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
+          nodeAutoColorBy="group"
+          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
+          nodeLabel="name"
+          nodeColor={getNodeColor}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
+          linkWidth={0.3}
+          linkDirectionalParticles={4}
+          linkDirectionalParticleWidth={1}
+          linkDirectionalParticleSpeed={0.005}
+          nodeCanvasObjectMode={() => 'after'}
+          nodeCanvasObject={(node, ctx, globalScale) => {
+            if (showLabels) {
+              const label = node.name;
+              const fontSize = 4/globalScale;
+              ctx.font = `${fontSize}px Inter, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(label, node.x, node.y + 4);
+            }
 
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
-              ctx.fillStyle = getNodeColor(node);
-              ctx.fill();
-            }}
-            onNodeHover={handleNodeHover}
-            onNodeClick={handleNodeClick}
-            cooldownTimes={100}
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={0.3}
-            linkHoverPrecision={5}
-            onLinkHover={(link) => {
-              if (link) {
-                link.color = '#f59e0b';
-                link.width = 0.5;
-              }
-            }}
-          />
-        </div>
-        <AnimatePresence>
-          {showAnalysisPanel && (
-            <motion.div
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 100 }}
-              className="w-1/3 bg-background border-l border-border p-4 overflow-y-auto"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Repository Analysis</h2>
-                <Button
-                  onClick={() => setShowAnalysisPanel(false)}
-                  variant="ghost"
-                  size="icon"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              {isAnalyzing ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <pre className="whitespace-pre-wrap text-sm">{analysisResult}</pre>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
+            ctx.fillStyle = getNodeColor(node);
+            ctx.fill();
+          }}
+          onNodeHover={handleNodeHover}
+          onNodeClick={handleNodeClick}
+          cooldownTimes={100}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
+          linkHoverPrecision={5}
+          onLinkHover={(link) => {
+            if (link) {
+              link.color = '#f59e0b';
+              link.width = 0.5;
+            }
+          }}
+        />
         {selectedNode && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -268,6 +244,34 @@ const RepoVisualizer = () => {
           </motion.div>
         )}
       </div>
+      <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Repository Information</DialogTitle>
+            <DialogDescription>
+              {repoInfo && (
+                <div>
+                  <p>Name: {repoInfo.name}</p>
+                  <p>Owner: {repoInfo.owner.login}</p>
+                  <p>Stars: {repoInfo.stargazers_count}</p>
+                  <p>Forks: {repoInfo.forks_count}</p>
+                  <p>Description: {repoInfo.description}</p>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Repository Analysis</DialogTitle>
+            <DialogDescription>
+              <div className="mt-4 whitespace-pre-wrap">{analysisResult}</div>
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
