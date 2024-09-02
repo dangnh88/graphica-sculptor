@@ -10,7 +10,6 @@ import { Tooltip } from './ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 import { Slider } from './ui/slider';
-import { FolderIcon, FileIcon, GitCommitIcon, TagIcon } from 'lucide-react';
 
 const RepoVisualizer = () => {
   const [repoUrl, setRepoUrl] = useState('');
@@ -94,13 +93,13 @@ const RepoVisualizer = () => {
   const getNodeIcon = useCallback((node) => {
     switch (node.group) {
       case 'tree':
-        return <FolderIcon />;
+        return '/icons/folder.svg';
       case 'blob':
-        return <FileIcon />;
+        return '/icons/file.svg';
       case 'commit':
-        return <GitCommitIcon />;
+        return '/icons/git-commit.svg';
       case 'tag':
-        return <TagIcon />;
+        return '/icons/tag.svg';
       default:
         return null;
     }
@@ -121,10 +120,14 @@ const RepoVisualizer = () => {
     ctx.fill();
     
     // Draw icon
-    const icon = getNodeIcon(node);
-    if (icon) {
-      const iconSize = nodeSize * 1.2;
-      ctx.drawImage(icon, node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
+    const iconUrl = getNodeIcon(node);
+    if (iconUrl) {
+      const img = new Image();
+      img.src = iconUrl;
+      img.onload = () => {
+        const iconSize = nodeSize * 1.2;
+        ctx.drawImage(img, node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
+      };
     }
     
     // Draw label if showLabels is true
