@@ -227,24 +227,34 @@ const RepoVisualizer = () => {
             }}
           />
         </div>
-        {showAnalysisPanel && (
-          <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 100 }}
-            className="w-1/3 bg-background border-l border-border p-4 overflow-y-auto"
-          >
-            <h2 className="text-2xl font-bold mb-4">Repository Analysis</h2>
-            <pre className="whitespace-pre-wrap text-sm">{analysisResult}</pre>
-            <Button
-              onClick={() => setShowAnalysisPanel(false)}
-              className="mt-4"
-              variant="outline"
+        <AnimatePresence>
+          {showAnalysisPanel && (
+            <motion.div
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="w-1/3 bg-background border-l border-border p-4 overflow-y-auto"
             >
-              Close
-            </Button>
-          </motion.div>
-        )}
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Repository Analysis</h2>
+                <Button
+                  onClick={() => setShowAnalysisPanel(false)}
+                  variant="ghost"
+                  size="icon"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              {isAnalyzing ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <pre className="whitespace-pre-wrap text-sm">{analysisResult}</pre>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
         {selectedNode && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
