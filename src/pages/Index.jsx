@@ -1,10 +1,13 @@
 import RepoVisualizer from '../components/RepoVisualizer';
+import { ThemeProvider } from 'next-themes';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gray-900">
-      <RepoVisualizer />
-    </div>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <div className="min-h-screen bg-background">
+        <RepoVisualizer />
+      </div>
+    </ThemeProvider>
   );
 };
 

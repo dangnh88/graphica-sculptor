@@ -28,3 +28,13 @@ export const fetchRepoStructure = async (owner, repo) => {
     throw error;
   }
 };
+
+export const fetchRepoInfo = async (owner, repo) => {
+  try {
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching repo info:', error);
+    throw error;
+  }
+};
