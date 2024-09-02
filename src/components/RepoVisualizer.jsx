@@ -78,6 +78,16 @@ const RepoVisualizer = () => {
     return { nodes: filteredNodes, links: filteredLinks };
   }, [graphData, searchTerm]);
 
+  const getNodeColor = useCallback((node) => {
+    const colors = {
+      tree: '#22c55e',
+      blob: '#3b82f6',
+      commit: '#f59e0b',
+      tag: '#8b5cf6',
+    };
+    return colors[node.group] || '#6b7280';
+  }, []);
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -162,32 +172,33 @@ const RepoVisualizer = () => {
           nodeAutoColorBy="group"
           nodeVal={node => node.group === 'blob' ? 4 : 6}
           nodeLabel="name"
-          nodeColor={node => node.group === 'tree' ? '#22c55e' : '#3b82f6'}
-          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.6)' : 'rgba(55, 65, 81, 0.6)'}
-          linkWidth={1}
+          nodeColor={getNodeColor}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
+          linkWidth={1.5}
           linkDirectionalParticles={2}
-          linkDirectionalParticleWidth={1}
+          linkDirectionalParticleWidth={1.5}
+          linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
             if (!showLabels) return;
             const label = node.name;
-            const fontSize = 14/globalScale;
+            const fontSize = 12/globalScale;
             ctx.font = `${fontSize}px Inter, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = theme === 'dark' ? 'white' : 'black';
+            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
             ctx.fillText(label, node.x, node.y + 10);
           }}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
-          cooldownTicks={100}
+          cooldownTimes={100}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
           linkHoverPrecision={5}
           onLinkHover={(link) => {
             if (link) {
               link.color = '#f59e0b';
-              link.width = 2;
+              link.width = 3;
             }
           }}
         />
