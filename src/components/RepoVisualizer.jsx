@@ -17,7 +17,7 @@ const RepoVisualizer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const [showLabels, setShowLabels] = useState(true);
+  const [showLabels, setShowLabels] = useState(false);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
