@@ -52,11 +52,12 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = 8;
-      node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
+      node.__r = node.group === 'directory' ? 12 : 8;
+      node.__strokeColor = 'rgba(255, 255, 255, 0.8)';
+      node.__strokeWidth = 2;
     }
     setSelectedNode(node);
-  }, [theme]);
+  }, []);
 
   const handleNodeClick = useCallback(node => {
     if (graphRef.current) {
@@ -80,12 +81,11 @@ const RepoVisualizer = () => {
 
   const getNodeColor = useCallback((node) => {
     const colors = {
-      tree: '#22c55e',
-      blob: '#3b82f6',
-      commit: '#f59e0b',
-      tag: '#8b5cf6',
+      directory: '#4ade80',
+      file: '#60a5fa',
+      root: '#f472b6',
     };
-    return colors[node.group] || '#6b7280';
+    return colors[node.group] || '#9ca3af';
   }, []);
 
   return (
@@ -170,25 +170,35 @@ const RepoVisualizer = () => {
           graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 4 : 6}
+          nodeVal={node => node.group === 'directory' ? 8 : 4}
           nodeLabel="name"
           nodeColor={getNodeColor}
-          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-          linkWidth={1.5}
-          linkDirectionalParticles={2}
-          linkDirectionalParticleWidth={1.5}
-          linkDirectionalParticleSpeed={0.005}
-          nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
-            if (!showLabels) return;
             const label = node.name;
             const fontSize = 12/globalScale;
             ctx.font = `${fontSize}px Inter, sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-            ctx.fillText(label, node.x, node.y + 10);
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.__r || (node.group === 'directory' ? 6 : 4), 0, 2 * Math.PI);
+            ctx.fillStyle = getNodeColor(node);
+            ctx.fill();
+            if (node.__strokeColor) {
+              ctx.strokeStyle = node.__strokeColor;
+              ctx.lineWidth = node.__strokeWidth || 1;
+              ctx.stroke();
+            }
+            if (showLabels && globalScale > 1) {
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(label, node.x, node.y + 10);
+            }
           }}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.2)' : 'rgba(55, 65, 81, 0.2)'}
+          linkWidth={1}
+          linkDirectionalParticles={2}
+          linkDirectionalParticleWidth={1}
+          linkDirectionalParticleSpeed={0.005}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
           cooldownTimes={100}
@@ -198,7 +208,7 @@ const RepoVisualizer = () => {
           onLinkHover={(link) => {
             if (link) {
               link.color = '#f59e0b';
-              link.width = 3;
+              link.width = 2;
             }
           }}
         />
