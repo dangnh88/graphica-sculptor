@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
 import { fetchRepoStructure, fetchRepoInfo } from '../utils/githubUtils';
 import { Button } from './ui/button';
@@ -9,7 +9,6 @@ import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
-import { Slider } from './ui/slider';
 
 const RepoVisualizer = () => {
   const [repoUrl, setRepoUrl] = useState('');
@@ -19,7 +18,6 @@ const RepoVisualizer = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
-  const [nodeSize, setNodeSize] = useState(1);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -54,12 +52,12 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = node.group === 'tree' ? 12 * nodeSize : 8 * nodeSize;
+      node.__r = node.group === 'directory' ? 12 : 8;
       node.__strokeColor = 'rgba(255, 255, 255, 0.8)';
-      node.__strokeWidth = 3;
+      node.__strokeWidth = 2;
     }
     setSelectedNode(node);
-  }, [nodeSize]);
+  }, []);
 
   const handleNodeClick = useCallback(node => {
     if (graphRef.current) {
@@ -68,7 +66,7 @@ const RepoVisualizer = () => {
     }
   }, []);
 
-  const filteredGraphData = useMemo(() => {
+  const filteredGraphData = useCallback(() => {
     if (!searchTerm) return graphData;
     const lowercasedSearch = searchTerm.toLowerCase();
     const filteredNodes = graphData.nodes.filter(node => 
@@ -83,53 +81,12 @@ const RepoVisualizer = () => {
 
   const getNodeColor = useCallback((node) => {
     const colors = {
-      tree: '#4ade80',
-      blob: '#60a5fa',
-      commit: '#f59e0b',
-      tag: '#8b5cf6',
+      directory: '#4ade80',
+      file: '#60a5fa',
+      root: '#f472b6',
     };
-    return colors[node.group] || '#6b7280';
+    return colors[node.group] || '#9ca3af';
   }, []);
-
-  const getNodeIcon = useCallback((node) => {
-    const icons = {
-      tree: '📁',
-      blob: '📄',
-      commit: '💾',
-      tag: '🏷️',
-    };
-    return icons[node.group] || '❓';
-  }, []);
-
-  const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
-    const size = node.group === 'tree' ? 12 * nodeSize : 8 * nodeSize;
-    const fontSize = 12 / globalScale;
-    const iconSize = size * 1.5;
-    
-    // Draw node circle
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI);
-    ctx.fillStyle = getNodeColor(node);
-    ctx.fill();
-    
-    // Draw white outline
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 3 / globalScale;
-    ctx.stroke();
-
-    // Draw icon
-    ctx.font = `${iconSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(getNodeIcon(node), node.x, node.y);
-
-    // Draw label
-    if (showLabels && globalScale > 1.5) {
-      ctx.font = `${fontSize}px Inter, sans-serif`;
-      ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-      ctx.fillText(node.name, node.x, node.y + size + fontSize);
-    }
-  }, [getNodeColor, getNodeIcon, nodeSize, showLabels, theme]);
 
   return (
     <motion.div 
@@ -194,17 +151,6 @@ const RepoVisualizer = () => {
             </Button>
           </Tooltip>
         </div>
-        <div className="flex items-center space-x-2 w-full max-w-2xl">
-          <span className="text-sm">Node Size:</span>
-          <Slider
-            min={0.5}
-            max={2}
-            step={0.1}
-            value={[nodeSize]}
-            onValueChange={([value]) => setNodeSize(value)}
-            className="w-48"
-          />
-        </div>
       </div>
       <div className="flex-grow relative">
         <AnimatePresence>
@@ -221,26 +167,50 @@ const RepoVisualizer = () => {
         </AnimatePresence>
         <ForceGraph2D
           ref={graphRef}
-          graphData={filteredGraphData}
+          graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'tree' ? 12 * nodeSize : 8 * nodeSize}
+          nodeVal={node => node.group === 'directory' ? 8 : 4}
           nodeLabel="name"
           nodeColor={getNodeColor}
-          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.1)' : 'rgba(55, 65, 81, 0.1)'}
+          nodeCanvasObject={(node, ctx, globalScale) => {
+            const label = node.name;
+            const fontSize = 12/globalScale;
+            ctx.font = `${fontSize}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.__r || (node.group === 'directory' ? 6 : 4), 0, 2 * Math.PI);
+            ctx.fillStyle = getNodeColor(node);
+            ctx.fill();
+            if (node.__strokeColor) {
+              ctx.strokeStyle = node.__strokeColor;
+              ctx.lineWidth = node.__strokeWidth || 1;
+              ctx.stroke();
+            }
+            if (showLabels && globalScale > 1) {
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(label, node.x, node.y + 10);
+            }
+          }}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.2)' : 'rgba(55, 65, 81, 0.2)'}
           linkWidth={1}
           linkDirectionalParticles={2}
           linkDirectionalParticleWidth={1}
           linkDirectionalParticleSpeed={0.005}
-          nodeCanvasObjectMode={() => 'replace'}
-          nodeCanvasObject={nodeCanvasObject}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
           cooldownTimes={100}
           d3AlphaDecay={0.02}
           d3VelocityDecay={0.3}
-          dagMode="td"
-          dagLevelDistance={50}
+          linkHoverPrecision={5}
+          onLinkHover={(link) => {
+            if (link) {
+              link.color = '#f59e0b';
+              link.width = 2;
+            }
+          }}
         />
         {selectedNode && (
           <motion.div
