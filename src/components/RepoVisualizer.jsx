@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
 import { fetchRepoStructure, fetchRepoInfo } from '../utils/githubUtils';
 import { Button } from './ui/button';
@@ -9,7 +9,6 @@ import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
-import { Slider } from './ui/slider';
 
 const RepoVisualizer = () => {
   const [repoUrl, setRepoUrl] = useState('');
@@ -19,7 +18,6 @@ const RepoVisualizer = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
-  const [nodeSize, setNodeSize] = useState(6);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -54,11 +52,11 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = nodeSize * 1.5;
+      node.__r = 8;
       node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
     }
     setSelectedNode(node);
-  }, [theme, nodeSize]);
+  }, [theme]);
 
   const handleNodeClick = useCallback(node => {
     if (graphRef.current) {
@@ -67,7 +65,7 @@ const RepoVisualizer = () => {
     }
   }, []);
 
-  const filteredGraphData = useMemo(() => {
+  const filteredGraphData = useCallback(() => {
     if (!searchTerm) return graphData;
     const lowercasedSearch = searchTerm.toLowerCase();
     const filteredNodes = graphData.nodes.filter(node => 
@@ -89,52 +87,6 @@ const RepoVisualizer = () => {
     };
     return colors[node.group] || '#6b7280';
   }, []);
-
-  const getNodeIcon = useCallback((node) => {
-    switch (node.group) {
-      case 'tree':
-        return '/icons/folder.svg';
-      case 'blob':
-        return '/icons/file.svg';
-      case 'commit':
-        return '/icons/git-commit.svg';
-      case 'tag':
-        return '/icons/tag.svg';
-      default:
-        return null;
-    }
-  }, []);
-
-  const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
-    const label = node.name;
-    const fontSize = 12 / globalScale;
-    ctx.font = `${fontSize}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-    
-    // Draw node
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
-    ctx.fillStyle = getNodeColor(node);
-    ctx.fill();
-    
-    // Draw icon
-    const iconUrl = getNodeIcon(node);
-    if (iconUrl) {
-      const img = new Image();
-      img.src = iconUrl;
-      img.onload = () => {
-        const iconSize = nodeSize * 1.2;
-        ctx.drawImage(img, node.x - iconSize / 2, node.y - iconSize / 2, iconSize, iconSize);
-      };
-    }
-    
-    // Draw label if showLabels is true
-    if (showLabels) {
-      ctx.fillText(label, node.x, node.y + nodeSize + fontSize);
-    }
-  }, [theme, nodeSize, showLabels, getNodeColor, getNodeIcon]);
 
   return (
     <motion.div 
@@ -199,17 +151,6 @@ const RepoVisualizer = () => {
             </Button>
           </Tooltip>
         </div>
-        <div className="flex items-center space-x-2 w-full max-w-2xl">
-          <span className="text-sm">Node Size:</span>
-          <Slider
-            min={2}
-            max={10}
-            step={1}
-            value={[nodeSize]}
-            onValueChange={(value) => setNodeSize(value[0])}
-            className="w-48"
-          />
-        </div>
       </div>
       <div className="flex-grow relative">
         <AnimatePresence>
@@ -226,10 +167,10 @@ const RepoVisualizer = () => {
         </AnimatePresence>
         <ForceGraph2D
           ref={graphRef}
-          graphData={filteredGraphData}
+          graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? nodeSize * 0.8 : nodeSize}
+          nodeVal={node => node.group === 'blob' ? 4 : 6}
           nodeLabel="name"
           nodeColor={getNodeColor}
           linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
@@ -238,7 +179,16 @@ const RepoVisualizer = () => {
           linkDirectionalParticleWidth={1.5}
           linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
-          nodeCanvasObject={nodeCanvasObject}
+          nodeCanvasObject={(node, ctx, globalScale) => {
+            if (!showLabels) return;
+            const label = node.name;
+            const fontSize = 12/globalScale;
+            ctx.font = `${fontSize}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+            ctx.fillText(label, node.x, node.y + 10);
+          }}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}
           cooldownTimes={100}
@@ -251,8 +201,6 @@ const RepoVisualizer = () => {
               link.width = 3;
             }
           }}
-          dagMode="td"
-          dagLevelDistance={50}
         />
         {selectedNode && (
           <motion.div
