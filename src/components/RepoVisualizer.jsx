@@ -52,7 +52,7 @@ const RepoVisualizer = () => {
 
   const handleNodeHover = useCallback(node => {
     if (node) {
-      node.__r = 3; // Reduced hover size
+      node.__r = 2.5; // Further reduced hover size
       node.__strokeColor = theme === 'dark' ? '#fff' : '#000';
     }
     setSelectedNode(node);
@@ -170,27 +170,29 @@ const RepoVisualizer = () => {
           graphData={filteredGraphData()}
           backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
           nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 1 : 1.5} // Reduced node sizes
+          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75} // Further reduced node sizes
           nodeLabel="name"
           nodeColor={getNodeColor}
           linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-          linkWidth={0.5} // Reduced link width
+          linkWidth={0.3} // Further reduced link width
           linkDirectionalParticles={1}
-          linkDirectionalParticleWidth={0.5} // Reduced particle width
+          linkDirectionalParticleWidth={0.3} // Further reduced particle width
           linkDirectionalParticleSpeed={0.005}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
-            const label = node.name;
-            const fontSize = 6/globalScale; // Reduced font size
-            ctx.font = `${fontSize}px Inter, sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-            ctx.fillText(label, node.x, node.y + 6);
+            if (showLabels) {
+              const label = node.name;
+              const fontSize = 4/globalScale; // Further reduced font size
+              ctx.font = `${fontSize}px Inter, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(label, node.x, node.y + 4);
+            }
 
             // Draw a smaller circle for the node
             ctx.beginPath();
-            ctx.arc(node.x, node.y, 2, 0, 2 * Math.PI, false); // Reduced circle size
+            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false); // Further reduced circle size
             ctx.fillStyle = getNodeColor(node);
             ctx.fill();
           }}
@@ -203,7 +205,7 @@ const RepoVisualizer = () => {
           onLinkHover={(link) => {
             if (link) {
               link.color = '#f59e0b';
-              link.width = 1; // Reduced hover width
+              link.width = 0.5; // Further reduced hover width
             }
           }}
         />
