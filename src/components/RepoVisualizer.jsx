@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
-import { fetchRepoStructure, fetchRepoInfo } from '../utils/githubUtils';
+import { fetchRepoStructure, fetchRepoInfo, analyzeRepoContent } from '../utils/githubUtils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Loader2, Sun, Moon, Search, Info, Tag } from 'lucide-react';
+import { Loader2, Sun, Moon, Search, Info, Tag, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
@@ -18,6 +18,8 @@ const RepoVisualizer = () => {
   const [selectedNode, setSelectedNode] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState('');
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -88,6 +90,18 @@ const RepoVisualizer = () => {
     return colors[node.group] || '#6b7280';
   }, []);
 
+  const handleAnalyze = async () => {
+    if (!repoUrl) return;
+    const [, , , owner, repo] = repoUrl.split('/');
+    try {
+      const result = await analyzeRepoContent(owner, repo);
+      setAnalysisResult(result);
+      setIsAnalysisOpen(true);
+    } catch (error) {
+      setError('Failed to analyze repository content. Please try again.');
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -148,6 +162,15 @@ const RepoVisualizer = () => {
               onClick={() => setShowLabels(!showLabels)}
             >
               <Tag className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Analyze repository content">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleAnalyze}
+            >
+              <Brain className="h-4 w-4" />
             </Button>
           </Tooltip>
         </div>
@@ -235,6 +258,16 @@ const RepoVisualizer = () => {
                   <p>Description: {repoInfo.description}</p>
                 </div>
               )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isAnalysisOpen} onOpenChange={setIsAnalysisOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Repository Analysis</DialogTitle>
+            <DialogDescription>
+              <div className="mt-4 whitespace-pre-wrap">{analysisResult}</div>
             </DialogDescription>
           </DialogHeader>
         </DialogContent>
