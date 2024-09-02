@@ -59,13 +59,8 @@ const RepoVisualizer = () => {
 
   const handleNodeClick = useCallback(node => {
     if (graphRef.current) {
-      const distance = 40;
-      const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
-      graphRef.current.cameraPosition(
-        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
-        node,
-        1000
-      );
+      graphRef.current.centerAt(node.x, node.y, 1000);
+      graphRef.current.zoom(2, 1000);
     }
   }, []);
 
