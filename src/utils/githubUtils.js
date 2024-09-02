@@ -1,50 +1,30 @@
 import axios from 'axios';
-import simpleGit from 'simple-git';
-import fs from 'fs';
-import path from 'path';
 
-const TEMP_CLONE_DIR = '/tmp/repo-clone';
+export const fetchRepoStructure = async (owner, repo) => {
+  try {
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
+    const tree = response.data.tree;
 
-export const cloneAndAnalyzeRepo = async (repoUrl) => {
-  const repoName = repoUrl.split('/').pop().replace('.git', '');
-  const clonePath = path.join(TEMP_CLONE_DIR, repoName);
+    const nodes = [];
+    const links = [];
+    const pathMap = new Map();
 
-  // Clone the repository
-  await simpleGit().clone(repoUrl, clonePath);
+    tree.forEach(item => {
+      const parts = item.path.split('/');
+      const name = parts.pop();
+      const parentPath = parts.join('/');
 
-  // Analyze the repository structure
-  const fileStructure = await analyzeDirectory(clonePath);
+      nodes.push({ id: item.path, name, group: item.type });
+      pathMap.set(item.path, true);
 
-  // Clean up: remove the cloned repository
-  fs.rmdirSync(clonePath, { recursive: true });
-
-  return fileStructure;
-};
-
-const analyzeDirectory = async (dirPath, parentId = null) => {
-  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-  const nodes = [];
-  const links = [];
-
-  for (const entry of entries) {
-    const fullPath = path.join(dirPath, entry.name);
-    const id = fullPath;
-
-    if (entry.isDirectory()) {
-      nodes.push({ id, name: entry.name, group: 'directory' });
-      if (parentId) {
-        links.push({ source: parentId, target: id });
+      if (parentPath && pathMap.has(parentPath)) {
+        links.push({ source: parentPath, target: item.path });
       }
-      const { nodes: childNodes, links: childLinks } = await analyzeDirectory(fullPath, id);
-      nodes.push(...childNodes);
-      links.push(...childLinks);
-    } else {
-      nodes.push({ id, name: entry.name, group: 'file' });
-      if (parentId) {
-        links.push({ source: parentId, target: id });
-      }
-    }
+    });
+
+    return { nodes, links };
+  } catch (error) {
+    console.error('Error fetching repo structure:', error);
+    throw error;
   }
-
-  return { nodes, links };
 };

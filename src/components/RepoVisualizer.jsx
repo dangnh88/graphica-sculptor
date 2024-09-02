@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
-import { cloneAndAnalyzeRepo } from '../utils/githubUtils';
+import { fetchRepoStructure } from '../utils/githubUtils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 
@@ -12,7 +12,8 @@ const RepoVisualizer = () => {
   const handleVisualize = async () => {
     setLoading(true);
     try {
-      const data = await cloneAndAnalyzeRepo(repoUrl);
+      const [, , , owner, repo] = repoUrl.split('/');
+      const data = await fetchRepoStructure(owner, repo);
       setGraphData(data);
     } catch (error) {
       console.error('Error visualizing repository:', error);
@@ -26,7 +27,7 @@ const RepoVisualizer = () => {
       <div className="flex items-center space-x-2 p-4">
         <Input
           type="text"
-          placeholder="Enter GitHub repository URL"
+          placeholder="Enter GitHub repository URL (e.g., https://github.com/owner/repo)"
           value={repoUrl}
           onChange={(e) => setRepoUrl(e.target.value)}
           className="flex-grow"
