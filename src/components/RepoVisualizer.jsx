@@ -3,7 +3,7 @@ import { ForceGraph2D } from 'react-force-graph';
 import { fetchRepoStructure, fetchRepoInfo } from '../utils/githubUtils';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Loader2, Sun, Moon, Search, Filter, Info } from 'lucide-react';
+import { Loader2, Sun, Moon, Search, Filter, Info, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
@@ -17,6 +17,7 @@ const RepoVisualizer = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNode, setSelectedNode] = useState(null);
   const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -130,6 +131,15 @@ const RepoVisualizer = () => {
               <Info className="h-4 w-4" />
             </Button>
           </Tooltip>
+          <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowLabels(!showLabels)}
+            >
+              <Tag className="h-4 w-4" />
+            </Button>
+          </Tooltip>
         </div>
       </div>
       <div className="flex-grow relative">
@@ -159,6 +169,7 @@ const RepoVisualizer = () => {
           linkDirectionalParticleWidth={1}
           nodeCanvasObjectMode={() => 'after'}
           nodeCanvasObject={(node, ctx, globalScale) => {
+            if (!showLabels) return;
             const label = node.name;
             const fontSize = 14/globalScale;
             ctx.font = `${fontSize}px Inter, sans-serif`;
