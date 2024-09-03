@@ -217,33 +217,9 @@ const RepoVisualizer = () => {
         </div>
 
         {/* Center Content */}
-        <div className="flex-grow flex flex-col items-center justify-center p-4 overflow-auto">
-          {/* Tree View */}
-          <div className="w-full max-w-2xl bg-card text-card-foreground p-4 rounded-lg shadow-lg mb-4">
-            <h2 className="text-xl font-semibold mb-2">Repository Structure</h2>
-            {treeData.length > 0 ? (
-              <Tree
-                data={treeData}
-                width="100%"
-                height={400}
-                indent={24}
-                rowHeight={24}
-                overscanCount={5}
-              >
-                {({ node, style, dragHandle }) => (
-                  <div style={style} ref={dragHandle} className="flex items-center">
-                    <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
-                    {node.data.name}
-                  </div>
-                )}
-              </Tree>
-            ) : (
-              <p className="text-muted-foreground">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
-            )}
-          </div>
-
+        <div className="flex-grow flex flex-col items-center justify-center p-4 overflow-auto relative">
           {/* Graph Area */}
-          <div className="w-full h-96 relative">
+          <div className="w-full h-full relative">
             <AnimatePresence>
               {(isRepoStructureLoading || isRepoInfoLoading) && (
                 <motion.div
@@ -299,6 +275,30 @@ const RepoVisualizer = () => {
                 }
               }}
             />
+          </div>
+
+          {/* Tree View Overlay */}
+          <div className="absolute top-4 left-4 w-1/3 max-h-1/2 bg-card text-card-foreground p-4 rounded-lg shadow-lg overflow-auto z-20">
+            <h2 className="text-xl font-semibold mb-2">Repository Structure</h2>
+            {treeData.length > 0 ? (
+              <Tree
+                data={treeData}
+                width="100%"
+                height={300}
+                indent={24}
+                rowHeight={24}
+                overscanCount={5}
+              >
+                {({ node, style, dragHandle }) => (
+                  <div style={style} ref={dragHandle} className="flex items-center">
+                    <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
+                    {node.data.name}
+                  </div>
+                )}
+              </Tree>
+            ) : (
+              <p className="text-muted-foreground">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
+            )}
           </div>
         </div>
       </div>
