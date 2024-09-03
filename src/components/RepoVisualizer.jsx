@@ -109,7 +109,79 @@ const RepoVisualizer = () => {
   };
 
   return (
-    <div className="w-full h-screen flex bg-background text-foreground relative">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="w-full h-screen flex flex-col bg-background text-foreground relative"
+    >
+      <div className="flex flex-col items-center space-y-4 p-6 bg-secondary">
+        <h1 className="text-3xl font-bold mb-4">GitHub Repository Visualizer</h1>
+        <div className="flex items-center space-x-2 w-full max-w-2xl">
+          <Input
+            type="text"
+            placeholder="Enter GitHub repository URL (e.g., https://github.com/owner/repo)"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+            className="flex-grow bg-background text-foreground border-input focus:border-primary"
+          />
+          <Button 
+            onClick={handleVisualize} 
+            disabled={isRepoStructureLoading} 
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md transition-colors duration-200"
+          >
+            {isRepoStructureLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Visualize'}
+          </Button>
+          <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </Tooltip>
+        </div>
+        {error && <p className="text-destructive mt-2">{error}</p>}
+        <div className="flex items-center space-x-2 w-full max-w-2xl">
+          <Input
+            type="text"
+            placeholder="Search nodes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow bg-background text-foreground border-input focus:border-primary"
+            startIcon={<Search className="h-4 w-4" />}
+          />
+          <Tooltip content="View repository info">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsInfoOpen(true)}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowLabels(!showLabels)}
+            >
+              <Tag className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Analyze repository content">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !repoUrl}
+            >
+              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
       <div className="flex-grow relative">
         <AnimatePresence>
           {(isRepoStructureLoading || isRepoInfoLoading) && (
@@ -179,112 +251,44 @@ const RepoVisualizer = () => {
           </motion.div>
         )}
       </div>
-      <motion.div 
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className="w-80 h-full bg-secondary p-6 shadow-lg overflow-y-auto"
-      >
-        <h1 className="text-2xl font-bold mb-6">GitHub Repository Visualizer</h1>
-        <div className="space-y-4">
-          <Input
-            type="text"
-            placeholder="Enter GitHub repository URL"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            className="w-full bg-background text-foreground border-input focus:border-primary"
-          />
-          <Button 
-            onClick={handleVisualize} 
-            disabled={isRepoStructureLoading} 
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {isRepoStructureLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Visualize'}
-          </Button>
-          {error && <p className="text-destructive mt-2">{error}</p>}
-          <Input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-background text-foreground border-input focus:border-primary"
-          />
-          <div className="flex justify-between">
-            <Tooltip content="View repository info">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsInfoOpen(true)}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </Tooltip>
-            <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowLabels(!showLabels)}
-              >
-                <Tag className="h-4 w-4" />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Analyze repository content">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || !repoUrl}
-              >
-                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              </Button>
-            </Tooltip>
-            <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-      </motion.div>
       <AnimatePresence>
         {isAnalysisPanelOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
-            onClick={() => setIsAnalysisPanelOpen(false)}
-          >
+          <>
             <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              className="bg-background p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setIsAnalysisPanelOpen(false)}
+            />
+            <motion.div
+              initial={{ x: '100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '100%', opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              className="fixed right-0 top-0 h-full w-full sm:w-2/3 md:w-1/2 lg:w-1/3 bg-background shadow-lg z-50 overflow-y-auto"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Repository Analysis</h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsAnalysisPanelOpen(false)}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                </Button>
-              </div>
-              {isAnalyzing ? (
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold">Repository Analysis</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsAnalysisPanelOpen(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </Button>
                 </div>
-              ) : (
-                <div className="whitespace-pre-wrap">{analysisResult}</div>
-              )}
+                {isAnalyzing ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{analysisResult}</div>
+                )}
+              </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
       <Dialog open={isInfoOpen} onOpenChange={setIsInfoOpen}>
@@ -305,7 +309,7 @@ const RepoVisualizer = () => {
           </DialogHeader>
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   );
 };
 
