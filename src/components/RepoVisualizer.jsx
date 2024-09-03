@@ -140,25 +140,67 @@ const RepoVisualizer = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full h-screen flex flex-col bg-background text-foreground relative"
+      className="w-full h-screen flex bg-background text-foreground relative"
     >
-      {/* Top Panel */}
-      <div className="w-full p-4 bg-secondary shadow-md z-10">
-        <div className="flex items-center space-x-4">
-          <Input
-            type="text"
-            placeholder="Enter GitHub repository URL"
-            value={repoUrl}
-            onChange={(e) => setRepoUrl(e.target.value)}
-            className="flex-grow bg-background text-foreground border-input focus:border-primary"
-          />
-          <Button 
-            onClick={handleVisualize} 
-            disabled={isRepoStructureLoading} 
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {isRepoStructureLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Visualize'}
-          </Button>
+      {/* Left Panel */}
+      <motion.div
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="w-64 h-full bg-secondary p-4 flex flex-col space-y-4 shadow-lg z-10"
+      >
+        <h1 className="text-2xl font-bold mb-4">GitHub Repo Visualizer</h1>
+        <Input
+          type="text"
+          placeholder="Enter GitHub repository URL"
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
+          className="bg-background text-foreground border-input focus:border-primary"
+        />
+        <Button 
+          onClick={handleVisualize} 
+          disabled={isRepoStructureLoading} 
+          className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+        >
+          {isRepoStructureLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Visualize'}
+        </Button>
+        <Input
+          type="text"
+          placeholder="Search nodes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-background text-foreground border-input focus:border-primary"
+          startIcon={<Search className="h-4 w-4" />}
+        />
+        <div className="flex justify-between">
+          <Tooltip content="View repository info">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsInfoOpen(true)}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowLabels(!showLabels)}
+            >
+              <Tag className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Analyze repository content">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !repoUrl}
+            >
+              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            </Button>
+          </Tooltip>
           <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
             <Button
               variant="outline"
@@ -170,136 +212,103 @@ const RepoVisualizer = () => {
           </Tooltip>
         </div>
         {error && <p className="text-destructive mt-2">{error}</p>}
-      </div>
+      </motion.div>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex overflow-hidden">
-        {/* Left Panel */}
-        <div className="w-64 bg-secondary p-4 flex flex-col space-y-4 shadow-lg z-10 overflow-y-auto">
-          <Input
-            type="text"
-            placeholder="Search nodes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-background text-foreground border-input focus:border-primary"
-            startIcon={<Search className="h-4 w-4" />}
-          />
-          <div className="flex justify-between">
-            <Tooltip content="View repository info">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsInfoOpen(true)}
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-            </Tooltip>
-            <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowLabels(!showLabels)}
-              >
-                <Tag className="h-4 w-4" />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Analyze repository content">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || !repoUrl}
-              >
-                {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-              </Button>
-            </Tooltip>
-          </div>
+      <div className="flex-grow flex flex-col">
+        {/* Tree View */}
+        <div className="h-1/3 overflow-auto border-b border-border">
+          <h2 className="text-xl font-semibold p-2">Repository Structure</h2>
+          {treeData.length > 0 ? (
+            <Tree
+              data={treeData}
+              width="100%"
+              height={300}
+              indent={24}
+              rowHeight={24}
+              overscanCount={1}
+            >
+              {({ node, style, dragHandle }) => (
+                <div style={style} ref={dragHandle} className="flex items-center">
+                  <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
+                  {node.data.name}
+                </div>
+              )}
+            </Tree>
+          ) : (
+            <p className="p-2">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
+          )}
         </div>
 
-        {/* Center Content */}
-        <div className="flex-grow flex flex-col items-center justify-center p-4 overflow-auto relative">
-          {/* Graph Area */}
-          <div className="w-full h-full relative">
-            <AnimatePresence>
-              {(isRepoStructureLoading || isRepoInfoLoading) && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"
-                >
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <ForceGraph2D
-              ref={graphRef}
-              graphData={filteredGraphData()}
-              backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
-              nodeAutoColorBy="group"
-              nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
-              nodeLabel="name"
-              nodeColor={getNodeColor}
-              linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-              linkWidth={0.3}
-              linkDirectionalParticles={4}
-              linkDirectionalParticleWidth={1}
-              linkDirectionalParticleSpeed={0.005}
-              nodeCanvasObjectMode={() => 'after'}
-              nodeCanvasObject={(node, ctx, globalScale) => {
-                if (showLabels) {
-                  const label = node.name;
-                  const fontSize = 4/globalScale;
-                  ctx.font = `${fontSize}px Inter, sans-serif`;
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-                  ctx.fillText(label, node.x, node.y + 4);
-                }
-
-                ctx.beginPath();
-                ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
-                ctx.fillStyle = getNodeColor(node);
-                ctx.fill();
-              }}
-              onNodeHover={handleNodeHover}
-              onNodeClick={handleNodeClick}
-              cooldownTimes={100}
-              d3AlphaDecay={0.02}
-              d3VelocityDecay={0.3}
-              linkHoverPrecision={5}
-              onLinkHover={(link) => {
-                if (link) {
-                  link.color = '#f59e0b';
-                  link.width = 0.5;
-                }
-              }}
-            />
-          </div>
-
-          {/* Tree View Overlay */}
-          <div className="absolute top-4 left-4 w-1/3 max-h-1/2 bg-card text-card-foreground p-4 rounded-lg shadow-lg overflow-auto z-20">
-            <h2 className="text-xl font-semibold mb-2">Repository Structure</h2>
-            {treeData.length > 0 ? (
-              <Tree
-                data={treeData}
-                width="100%"
-                height={300}
-                indent={24}
-                rowHeight={24}
-                overscanCount={5}
+        {/* Graph Area */}
+        <div className="flex-grow relative">
+          <AnimatePresence>
+            {(isRepoStructureLoading || isRepoInfoLoading) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"
               >
-                {({ node, style, dragHandle }) => (
-                  <div style={style} ref={dragHandle} className="flex items-center">
-                    <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
-                    {node.data.name}
-                  </div>
-                )}
-              </Tree>
-            ) : (
-              <p className="text-muted-foreground">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
+          <ForceGraph2D
+            ref={graphRef}
+            graphData={filteredGraphData()}
+            backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
+            nodeAutoColorBy="group"
+            nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
+            nodeLabel="name"
+            nodeColor={getNodeColor}
+            linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
+            linkWidth={0.3}
+            linkDirectionalParticles={4}
+            linkDirectionalParticleWidth={1}
+            linkDirectionalParticleSpeed={0.005}
+            nodeCanvasObjectMode={() => 'after'}
+            nodeCanvasObject={(node, ctx, globalScale) => {
+              if (showLabels) {
+                const label = node.name;
+                const fontSize = 4/globalScale;
+                ctx.font = `${fontSize}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                ctx.fillText(label, node.x, node.y + 4);
+              }
+
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
+              ctx.fillStyle = getNodeColor(node);
+              ctx.fill();
+            }}
+            onNodeHover={handleNodeHover}
+            onNodeClick={handleNodeClick}
+            cooldownTimes={100}
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.3}
+            linkHoverPrecision={5}
+            onLinkHover={(link) => {
+              if (link) {
+                link.color = '#f59e0b';
+                link.width = 0.5;
+              }
+            }}
+          />
+          {selectedNode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-4 left-68 bg-popover text-popover-foreground p-4 rounded-md shadow-lg"
+            >
+              <h3 className="font-bold">{selectedNode.name}</h3>
+              <p>Type: {selectedNode.group}</p>
+              <p>Path: {selectedNode.id}</p>
+            </motion.div>
+          )}
         </div>
       </div>
 
