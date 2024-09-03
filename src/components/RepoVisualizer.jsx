@@ -96,11 +96,13 @@ const RepoVisualizer = () => {
     const [, , , owner, repo] = repoUrl.split('/');
     setIsAnalyzing(true);
     setIsAnalysisPanelOpen(true);
+    setAnalysisResult(''); // Clear previous results
     try {
       const result = await analyzeRepoContent(owner, repo);
       setAnalysisResult(result);
     } catch (error) {
       setError('Failed to analyze repository content. Please try again.');
+      setAnalysisResult('Analysis failed. Please try again.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -173,7 +175,7 @@ const RepoVisualizer = () => {
               variant="outline"
               size="icon"
               onClick={handleAnalyze}
-              disabled={isAnalyzing}
+              disabled={isAnalyzing || !repoUrl}
             >
               {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
             </Button>
