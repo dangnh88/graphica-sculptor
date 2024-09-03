@@ -9,6 +9,7 @@ import { useTheme } from 'next-themes';
 import { Tooltip } from './ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
+import { Tree } from 'react-arborist';
 
 const RepoVisualizer = () => {
   const [repoUrl, setRepoUrl] = useState('');
@@ -21,6 +22,7 @@ const RepoVisualizer = () => {
   const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [treeData, setTreeData] = useState([]);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -45,8 +47,33 @@ const RepoVisualizer = () => {
   useEffect(() => {
     if (repoStructure) {
       setGraphData(repoStructure);
+      setTreeData(convertToTreeData(repoStructure.nodes));
     }
   }, [repoStructure]);
+
+  const convertToTreeData = (nodes) => {
+    const root = { id: 'root', name: 'Root', children: [] };
+    const nodeMap = new Map();
+    nodeMap.set('root', root);
+
+    nodes.forEach(node => {
+      const parts = node.id.split('/');
+      let currentPath = '';
+      let currentParent = root;
+
+      parts.forEach((part, index) => {
+        currentPath += (index > 0 ? '/' : '') + part;
+        if (!nodeMap.has(currentPath)) {
+          const newNode = { id: currentPath, name: part, children: [] };
+          nodeMap.set(currentPath, newNode);
+          currentParent.children.push(newNode);
+        }
+        currentParent = nodeMap.get(currentPath);
+      });
+    });
+
+    return [root];
+  };
 
   const handleVisualize = () => {
     setError('');
@@ -96,7 +123,7 @@ const RepoVisualizer = () => {
     const [, , , owner, repo] = repoUrl.split('/');
     setIsAnalyzing(true);
     setIsAnalysisPanelOpen(true);
-    setAnalysisResult(''); // Clear previous results
+    setAnalysisResult('');
     try {
       const result = await analyzeRepoContent(owner, repo);
       setAnalysisResult(result);
@@ -187,76 +214,99 @@ const RepoVisualizer = () => {
         {error && <p className="text-destructive mt-2">{error}</p>}
       </motion.div>
 
-      {/* Main Graph Area */}
-      <div className="flex-grow relative">
-        <AnimatePresence>
-          {(isRepoStructureLoading || isRepoInfoLoading) && (
+      {/* Tree View and Graph Area */}
+      <div className="flex-grow flex flex-col">
+        {/* Tree View */}
+        <div className="h-1/3 overflow-auto border-b border-border">
+          <Tree
+            data={treeData}
+            width="100%"
+            height={300}
+            indent={24}
+            rowHeight={24}
+            overscanCount={1}
+          >
+            {({ node, style, dragHandle }) => (
+              <div style={style} ref={dragHandle} className="flex items-center">
+                <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
+                {node.data.name}
+              </div>
+            )}
+          </Tree>
+        </div>
+
+        {/* Graph Area */}
+        <div className="flex-grow relative">
+          <AnimatePresence>
+            {(isRepoStructureLoading || isRepoInfoLoading) && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"
+              >
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <ForceGraph2D
+            ref={graphRef}
+            graphData={filteredGraphData()}
+            backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
+            nodeAutoColorBy="group"
+            nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
+            nodeLabel="name"
+            nodeColor={getNodeColor}
+            linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
+            linkWidth={0.3}
+            linkDirectionalParticles={4}
+            linkDirectionalParticleWidth={1}
+            linkDirectionalParticleSpeed={0.005}
+            nodeCanvasObjectMode={() => 'after'}
+            nodeCanvasObject={(node, ctx, globalScale) => {
+              if (showLabels) {
+                const label = node.name;
+                const fontSize = 4/globalScale;
+                ctx.font = `${fontSize}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                ctx.fillText(label, node.x, node.y + 4);
+              }
+
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
+              ctx.fillStyle = getNodeColor(node);
+              ctx.fill();
+            }}
+            onNodeHover={handleNodeHover}
+            onNodeClick={handleNodeClick}
+            cooldownTimes={100}
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.3}
+            linkHoverPrecision={5}
+            onLinkHover={(link) => {
+              if (link) {
+                link.color = '#f59e0b';
+                link.width = 0.5;
+              }
+            }}
+          />
+          {selectedNode && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-4 left-68 bg-popover text-popover-foreground p-4 rounded-md shadow-lg"
             >
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <h3 className="font-bold">{selectedNode.name}</h3>
+              <p>Type: {selectedNode.group}</p>
+              <p>Path: {selectedNode.id}</p>
             </motion.div>
           )}
-        </AnimatePresence>
-        <ForceGraph2D
-          ref={graphRef}
-          graphData={filteredGraphData()}
-          backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
-          nodeAutoColorBy="group"
-          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
-          nodeLabel="name"
-          nodeColor={getNodeColor}
-          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-          linkWidth={0.3}
-          linkDirectionalParticles={4}
-          linkDirectionalParticleWidth={1}
-          linkDirectionalParticleSpeed={0.005}
-          nodeCanvasObjectMode={() => 'after'}
-          nodeCanvasObject={(node, ctx, globalScale) => {
-            if (showLabels) {
-              const label = node.name;
-              const fontSize = 4/globalScale;
-              ctx.font = `${fontSize}px Inter, sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-              ctx.fillText(label, node.x, node.y + 4);
-            }
-
-            ctx.beginPath();
-            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
-            ctx.fillStyle = getNodeColor(node);
-            ctx.fill();
-          }}
-          onNodeHover={handleNodeHover}
-          onNodeClick={handleNodeClick}
-          cooldownTimes={100}
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
-          linkHoverPrecision={5}
-          onLinkHover={(link) => {
-            if (link) {
-              link.color = '#f59e0b';
-              link.width = 0.5;
-            }
-          }}
-        />
-        {selectedNode && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-4 left-68 bg-popover text-popover-foreground p-4 rounded-md shadow-lg"
-          >
-            <h3 className="font-bold">{selectedNode.name}</h3>
-            <p>Type: {selectedNode.group}</p>
-            <p>Path: {selectedNode.id}</p>
-          </motion.div>
-        )}
+        </div>
       </div>
+
       <AnimatePresence>
         {isAnalysisPanelOpen && (
           <>
