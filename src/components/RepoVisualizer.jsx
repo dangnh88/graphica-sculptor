@@ -218,21 +218,26 @@ const RepoVisualizer = () => {
       <div className="flex-grow flex flex-col">
         {/* Tree View */}
         <div className="h-1/3 overflow-auto border-b border-border">
-          <Tree
-            data={treeData}
-            width="100%"
-            height={300}
-            indent={24}
-            rowHeight={24}
-            overscanCount={1}
-          >
-            {({ node, style, dragHandle }) => (
-              <div style={style} ref={dragHandle} className="flex items-center">
-                <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
-                {node.data.name}
-              </div>
-            )}
-          </Tree>
+          <h2 className="text-xl font-semibold p-2">Repository Structure</h2>
+          {treeData.length > 0 ? (
+            <Tree
+              data={treeData}
+              width="100%"
+              height={300}
+              indent={24}
+              rowHeight={24}
+              overscanCount={1}
+            >
+              {({ node, style, dragHandle }) => (
+                <div style={style} ref={dragHandle} className="flex items-center">
+                  <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
+                  {node.data.name}
+                </div>
+              )}
+            </Tree>
+          ) : (
+            <p className="p-2">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
+          )}
         </div>
 
         {/* Graph Area */}
