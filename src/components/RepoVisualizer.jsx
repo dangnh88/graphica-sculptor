@@ -23,6 +23,7 @@ const RepoVisualizer = () => {
   const [analysisResult, setAnalysisResult] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [treeData, setTreeData] = useState([]);
+  const [showTreeView, setShowTreeView] = useState(false);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -78,6 +79,7 @@ const RepoVisualizer = () => {
   const handleVisualize = () => {
     setError('');
     refetchRepoStructure();
+    setShowTreeView(true);
   };
 
   const handleNodeHover = useCallback(node => {
@@ -215,102 +217,119 @@ const RepoVisualizer = () => {
       </motion.div>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex flex-col">
-        {/* Tree View */}
-        <div className="h-1/3 overflow-auto border-b border-border">
-          <h2 className="text-xl font-semibold p-2">Repository Structure</h2>
-          {treeData.length > 0 ? (
-            <Tree
-              data={treeData}
-              width="100%"
-              height={300}
-              indent={24}
-              rowHeight={24}
-              overscanCount={1}
-            >
-              {({ node, style, dragHandle }) => (
-                <div style={style} ref={dragHandle} className="flex items-center">
-                  <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
-                  {node.data.name}
-                </div>
-              )}
-            </Tree>
-          ) : (
-            <p className="p-2">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
-          )}
-        </div>
-
-        {/* Graph Area */}
-        <div className="flex-grow relative">
-          <AnimatePresence>
-            {(isRepoStructureLoading || isRepoInfoLoading) && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm"
-              >
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={filteredGraphData()}
-            backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
-            nodeAutoColorBy="group"
-            nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
-            nodeLabel="name"
-            nodeColor={getNodeColor}
-            linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
-            linkWidth={0.3}
-            linkDirectionalParticles={4}
-            linkDirectionalParticleWidth={1}
-            linkDirectionalParticleSpeed={0.005}
-            nodeCanvasObjectMode={() => 'after'}
-            nodeCanvasObject={(node, ctx, globalScale) => {
-              if (showLabels) {
-                const label = node.name;
-                const fontSize = 4/globalScale;
-                ctx.font = `${fontSize}px Inter, sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-                ctx.fillText(label, node.x, node.y + 4);
-              }
-
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
-              ctx.fillStyle = getNodeColor(node);
-              ctx.fill();
-            }}
-            onNodeHover={handleNodeHover}
-            onNodeClick={handleNodeClick}
-            cooldownTimes={100}
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={0.3}
-            linkHoverPrecision={5}
-            onLinkHover={(link) => {
-              if (link) {
-                link.color = '#f59e0b';
-                link.width = 0.5;
-              }
-            }}
-          />
-          {selectedNode && (
+      <div className="flex-grow relative">
+        <AnimatePresence>
+          {(isRepoStructureLoading || isRepoInfoLoading) && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-4 left-68 bg-popover text-popover-foreground p-4 rounded-md shadow-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20"
             >
-              <h3 className="font-bold">{selectedNode.name}</h3>
-              <p>Type: {selectedNode.group}</p>
-              <p>Path: {selectedNode.id}</p>
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </motion.div>
           )}
-        </div>
+        </AnimatePresence>
+        <ForceGraph2D
+          ref={graphRef}
+          graphData={filteredGraphData()}
+          backgroundColor={theme === 'dark' ? '#1a1b26' : '#f0f4f8'}
+          nodeAutoColorBy="group"
+          nodeVal={node => node.group === 'blob' ? 0.5 : 0.75}
+          nodeLabel="name"
+          nodeColor={getNodeColor}
+          linkColor={() => theme === 'dark' ? 'rgba(156, 163, 175, 0.3)' : 'rgba(55, 65, 81, 0.3)'}
+          linkWidth={0.3}
+          linkDirectionalParticles={4}
+          linkDirectionalParticleWidth={1}
+          linkDirectionalParticleSpeed={0.005}
+          nodeCanvasObjectMode={() => 'after'}
+          nodeCanvasObject={(node, ctx, globalScale) => {
+            if (showLabels) {
+              const label = node.name;
+              const fontSize = 4/globalScale;
+              ctx.font = `${fontSize}px Inter, sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillStyle = theme === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+              ctx.fillText(label, node.x, node.y + 4);
+            }
+
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 1.5, 0, 2 * Math.PI, false);
+            ctx.fillStyle = getNodeColor(node);
+            ctx.fill();
+          }}
+          onNodeHover={handleNodeHover}
+          onNodeClick={handleNodeClick}
+          cooldownTimes={100}
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
+          linkHoverPrecision={5}
+          onLinkHover={(link) => {
+            if (link) {
+              link.color = '#f59e0b';
+              link.width = 0.5;
+            }
+          }}
+        />
+        {selectedNode && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-4 left-68 bg-popover text-popover-foreground p-4 rounded-md shadow-lg"
+          >
+            <h3 className="font-bold">{selectedNode.name}</h3>
+            <p>Type: {selectedNode.group}</p>
+            <p>Path: {selectedNode.id}</p>
+          </motion.div>
+        )}
       </div>
+
+      {/* Tree View Overlay */}
+      <AnimatePresence>
+        {showTreeView && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="absolute top-4 right-4 w-1/3 h-1/2 bg-background border border-border rounded-lg shadow-lg overflow-auto z-30"
+          >
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-semibold">Repository Structure</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowTreeView(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </Button>
+              </div>
+              {treeData.length > 0 ? (
+                <Tree
+                  data={treeData}
+                  width="100%"
+                  height={300}
+                  indent={24}
+                  rowHeight={24}
+                  overscanCount={1}
+                >
+                  {({ node, style, dragHandle }) => (
+                    <div style={style} ref={dragHandle} className="flex items-center">
+                      <span className="mr-2">{node.isLeaf ? '📄' : node.isOpen ? '📂' : '📁'}</span>
+                      {node.data.name}
+                    </div>
+                  )}
+                </Tree>
+              ) : (
+                <p className="p-2">No repository structure available. Please enter a valid GitHub repository URL and click 'Visualize'.</p>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {isAnalysisPanelOpen && (
