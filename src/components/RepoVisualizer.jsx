@@ -214,7 +214,7 @@ const RepoVisualizer = () => {
         {error && <p className="text-destructive mt-2">{error}</p>}
       </motion.div>
 
-      {/* Tree View and Graph Area */}
+      {/* Main Content Area */}
       <div className="flex-grow flex flex-col">
         {/* Tree View */}
         <div className="h-1/3 overflow-auto border-b border-border">
