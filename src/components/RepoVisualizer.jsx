@@ -233,28 +233,31 @@ const RepoVisualizer = () => {
             }}
           />
         </div>
-        {isAnalysisPanelOpen && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '30%', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-background border-l border-border overflow-y-auto"
-          >
-            <div className="p-4">
-              <h2 className="text-2xl font-bold mb-4">Repository Analysis</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2"
-                onClick={() => setIsAnalysisPanelOpen(false)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </Button>
-              <div className="whitespace-pre-wrap">{analysisResult}</div>
-            </div>
-          </motion.div>
-        )}
+        <AnimatePresence>
+          {isAnalysisPanelOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: '30%', opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="bg-background border-l border-border overflow-y-auto"
+            >
+              <div className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold">Repository Analysis</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsAnalysisPanelOpen(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </Button>
+                </div>
+                <div className="whitespace-pre-wrap">{analysisResult}</div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         {selectedNode && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
