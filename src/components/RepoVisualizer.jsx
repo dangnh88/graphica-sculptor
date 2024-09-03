@@ -20,6 +20,7 @@ const RepoVisualizer = () => {
   const [showLabels, setShowLabels] = useState(false);
   const [isAnalysisPanelOpen, setIsAnalysisPanelOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const graphRef = useRef();
   const { theme, setTheme } = useTheme();
 
@@ -93,12 +94,15 @@ const RepoVisualizer = () => {
   const handleAnalyze = async () => {
     if (!repoUrl) return;
     const [, , , owner, repo] = repoUrl.split('/');
+    setIsAnalyzing(true);
+    setIsAnalysisPanelOpen(true);
     try {
       const result = await analyzeRepoContent(owner, repo);
       setAnalysisResult(result);
-      setIsAnalysisPanelOpen(true);
     } catch (error) {
       setError('Failed to analyze repository content. Please try again.');
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -169,8 +173,9 @@ const RepoVisualizer = () => {
               variant="outline"
               size="icon"
               onClick={handleAnalyze}
+              disabled={isAnalyzing}
             >
-              <Brain className="h-4 w-4" />
+              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
             </Button>
           </Tooltip>
         </div>
@@ -253,7 +258,13 @@ const RepoVisualizer = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </Button>
                 </div>
-                <div className="whitespace-pre-wrap">{analysisResult}</div>
+                {isAnalyzing ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap">{analysisResult}</div>
+                )}
               </div>
             </motion.div>
           )}
