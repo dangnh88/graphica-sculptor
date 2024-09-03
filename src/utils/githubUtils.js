@@ -2,7 +2,12 @@ import axios from 'axios';
 
 export const fetchRepoStructure = async (owner, repo) => {
   try {
-    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
+    // First, try to get the default branch
+    const repoInfoResponse = await axios.get(`https://api.github.com/repos/${owner}/${repo}`);
+    const defaultBranch = repoInfoResponse.data.default_branch;
+
+    // Then, fetch the tree using the default branch
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/git/trees/${defaultBranch}?recursive=1`);
     const tree = response.data.tree;
 
     const nodes = [];
@@ -25,7 +30,11 @@ export const fetchRepoStructure = async (owner, repo) => {
     return { nodes, links };
   } catch (error) {
     console.error('Error fetching repo structure:', error);
-    throw error;
+    if (error.response && error.response.status === 404) {
+      throw new Error('Repository not found or access denied. Please check the URL and try again.');
+    } else {
+      throw new Error('An error occurred while fetching the repository structure. Please try again later.');
+    }
   }
 };
 
@@ -35,7 +44,11 @@ export const fetchRepoInfo = async (owner, repo) => {
     return response.data;
   } catch (error) {
     console.error('Error fetching repo info:', error);
-    throw error;
+    if (error.response && error.response.status === 404) {
+      throw new Error('Repository not found or access denied. Please check the URL and try again.');
+    } else {
+      throw new Error('An error occurred while fetching the repository information. Please try again later.');
+    }
   }
 };
 
@@ -62,7 +75,7 @@ export const analyzeRepoContent = async (owner, repo) => {
     return aiAnalysis;
   } catch (error) {
     console.error('Error analyzing repo content:', error);
-    throw error;
+    throw new Error('An error occurred while analyzing the repository content. Please try again later.');
   }
 };
 
