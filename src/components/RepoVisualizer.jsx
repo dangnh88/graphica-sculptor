@@ -1,13 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { ForceGraph2D } from 'react-force-graph';
 import { fetchRepoStructure, fetchRepoInfo, analyzeRepoContent } from '../utils/githubUtils';
-import { Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Loader2, Sun, Moon, Search, Info, Tag, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { Tooltip } from './ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 import RepoTreeView from './RepoTreeView';
-import LeftPanel from './LeftPanel';
 
 const RepoVisualizer = () => {
   const [repoUrl, setRepoUrl] = useState('');
@@ -142,24 +144,79 @@ const RepoVisualizer = () => {
       transition={{ duration: 0.5 }}
       className="w-full h-screen flex bg-background text-foreground relative"
     >
-      <LeftPanel
-        repoUrl={repoUrl}
-        setRepoUrl={setRepoUrl}
-        handleVisualize={handleVisualize}
-        isRepoStructureLoading={isRepoStructureLoading}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        setIsInfoOpen={setIsInfoOpen}
-        showLabels={showLabels}
-        setShowLabels={setShowLabels}
-        handleAnalyze={handleAnalyze}
-        isAnalyzing={isAnalyzing}
-        theme={theme}
-        setTheme={setTheme}
-        error={error}
-        setShowTreeView={setShowTreeView}
-      />
+      {/* Left Panel */}
+      <motion.div
+        initial={{ x: -300 }}
+        animate={{ x: 0 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="w-64 h-full bg-secondary p-4 flex flex-col space-y-4 shadow-lg z-10"
+      >
+        <h1 className="text-2xl font-bold mb-4">GitHub Repo Visualizer</h1>
+        <Input
+          type="text"
+          placeholder="Enter GitHub repository URL"
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
+          className="bg-background text-foreground border-input focus:border-primary"
+        />
+        <Button 
+          onClick={handleVisualize} 
+          disabled={isRepoStructureLoading} 
+          className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+        >
+          {isRepoStructureLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Visualize'}
+        </Button>
+        <Input
+          type="text"
+          placeholder="Search nodes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="bg-background text-foreground border-input focus:border-primary"
+          startIcon={<Search className="h-4 w-4" />}
+        />
+        <div className="flex justify-between">
+          <Tooltip content="View repository info">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setIsInfoOpen(true)}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content={`${showLabels ? 'Hide' : 'Show'} labels`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowLabels(!showLabels)}
+            >
+              <Tag className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Analyze repository content">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || !repoUrl}
+            >
+              {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            </Button>
+          </Tooltip>
+          <Tooltip content={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          </Tooltip>
+        </div>
+        {error && <p className="text-destructive mt-2">{error}</p>}
+      </motion.div>
 
+      {/* Main Content Area */}
       <div className="flex-grow relative">
         <AnimatePresence>
           {(isRepoStructureLoading || isRepoInfoLoading) && (
