@@ -294,7 +294,7 @@ const RepoVisualizer = () => {
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
-            className="absolute top-4 left-68 w-1/3 h-1/2 bg-background border border-border rounded-lg shadow-lg overflow-auto z-30"
+            className="absolute top-4 right-4 w-1/3 h-1/2 bg-background border border-border rounded-lg shadow-lg overflow-auto z-30"
           >
             <div className="p-4">
               <div className="flex justify-between items-center mb-2">
